@@ -1,0 +1,89 @@
+# Defaults for every service. A service's values file overrides only what differs.
+# The safe defaults below are the point of a golden chart: teams get them for free.
+
+# Resource names default to the release name (= service name), so many services
+# can use this chart in one cluster without overwriting each other.
+nameOverride: ""
+
+image:
+  repository: ""   # required, e.g. ghcr.io/org/service
+  tag: ""          # required: an immutable tag (git SHA), never "latest"
+  pullPolicy: IfNotPresent
+
+# Used only when hpa.enabled is false (the HPA owns replicas otherwise).
+replicaCount: 2
+
+containerPort: 8080
+
+service:
+  port: 80
+
+# Plain configuration -> ConfigMap -> injected as env vars.
+env: {}
+
+# LAB ONLY: values -> Kubernetes Secret. In real environments secrets come from
+# a secret manager via External Secrets Operator, never from a values file.
+secretEnv: {}
+
+# Escape hatch: raw env entries, e.g. values composed from other vars with $(VAR).
+extraEnv: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+probes:
+  # Liveness = "is the process stuck?" A TCP check only: a dependency outage must
+  # not make Kubernetes restart every pod at once.
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  # Readiness = "can this pod take traffic right now?"
+  readiness:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  cpuUtilization: 70
+
+# Never drop below full capacity during a rollout; old pods serve until new ones are Ready.
+strategy:
+  maxSurge: 1
+  maxUnavailable: 0
+
+# Must be longer than the app's graceful-shutdown drain time.
+terminationGracePeriodSeconds: 35
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+serviceAccount:
+  create: true
+  # Cloud identity for the pod, no keys. Examples:
+  #   GKE Workload Identity: iam.gke.io/gcp-service-account: svc@project.iam.gserviceaccount.com
+  #   EKS IRSA:              eks.amazonaws.com/role-arn: arn:aws:iam::123:role/svc
+  annotations: {}
+
+# Off by default: internal services are reached by Service DNS name only.
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+
+# Escape hatches so teams don't need to fork the chart.
+initContainers: []
+podSecurityContext: {}
+securityContext: {}

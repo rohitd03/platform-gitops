@@ -1,0 +1,23 @@
+# Platform-managed dependencies for the local environment.
+# In a real cloud setup these are managed services created by Terraform
+# (GCP: Cloud SQL, Memorystore, Pub/Sub; AWS: RDS, ElastiCache, MSK/SNS+SQS).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rider-assignment-deps
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rohitd03/platform-gitops.git
+    targetRevision: main
+    path: platform/local-deps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rider-assignment
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

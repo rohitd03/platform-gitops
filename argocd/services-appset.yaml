@@ -1,0 +1,41 @@
+# One ApplicationSet creates one Argo CD Application per service folder.
+# Self-service: a team adds apps/<service>/local/values.yaml in a PR, and after
+# merge Argo CD deploys it with the golden chart - no platform ticket needed.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services-local
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/rohitd03/platform-gitops.git
+        revision: main
+        directories:
+          - path: apps/*/local
+  template:
+    metadata:
+      # apps/<service>/local -> segment 1 is the service name
+      name: '{{ index .path.segments 1 }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/rohitd03/platform-gitops.git
+        targetRevision: main
+        path: charts/golden-service
+        helm:
+          releaseName: '{{ index .path.segments 1 }}'
+          valueFiles:
+            - '../../{{ .path.path }}/values.yaml'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ index .path.segments 1 }}'
+      syncPolicy:
+        automated:
+          prune: true     # delete objects removed from Git
+          selfHeal: true  # revert manual kubectl changes back to Git
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

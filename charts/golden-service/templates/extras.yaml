@@ -1,0 +1,52 @@
+{{- /* Optional objects, each switched on by a value. */ -}}
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "golden.fullname" . }}
+  labels:
+    {{- include "golden.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- if .Values.podDisruptionBudget.enabled }}
+---
+# Keeps at least minAvailable pods up during voluntary disruptions (node drains, upgrades).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "golden.fullname" . }}
+  labels:
+    {{- include "golden.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "golden.selectorLabels" . | nindent 6 }}
+{{- end }}
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "golden.fullname" . }}
+  labels:
+    {{- include "golden.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ required "ingress.host is required when ingress is enabled" .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "golden.fullname" . }}
+                port:
+                  name: http
+{{- end }}

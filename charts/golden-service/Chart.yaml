@@ -1,0 +1,9 @@
+apiVersion: v2
+name: golden-service
+description: >-
+  Platform-owned base chart for stateless HTTP services. Service teams never
+  edit templates; they only provide values (apps/<service>/<env>/values.yaml).
+type: application
+# Bump on every template change. Services can pin a version, so a chart change
+# rolls out gradually (dev first) instead of hitting every service at once.
+version: 1.0.0
