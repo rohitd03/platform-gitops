@@ -8,7 +8,7 @@ image:
 
 env:
   PORT: "8080"
-  LOG_LEVEL: info
+  LOG_LEVEL: debug
   POSTGRES_HOST: postgres
   POSTGRES_PORT: "5432"
   POSTGRES_DB: rider_assignment
