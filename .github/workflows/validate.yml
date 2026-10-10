@@ -1,0 +1,44 @@
+# "Shift left": catch broken charts or values in the pull request,
+# before merge, instead of as a ComparisonError in Argo CD after merge.
+name: Validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  render:
+    name: Lint and render every service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /usr/local/bin kubeconform
+
+      # One loop over apps/<service>/<env>/values.yaml: the same files Argo CD deploys.
+      - name: Lint, render and validate
+        run: |
+          status=0
+          for values in apps/*/*/values.yaml; do
+            service=$(echo "$values" | cut -d/ -f2)
+            echo "::group::$values"
+            if helm lint charts/golden-service -f "$values" \
+              && helm template "$service" charts/golden-service -f "$values" > rendered.yaml \
+              && kubeconform -strict -summary rendered.yaml; then
+              echo "OK: $values"
+            else
+              echo "::error file=$values::chart failed to lint, render or validate with these values"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
