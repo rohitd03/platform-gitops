@@ -4,8 +4,7 @@
 
 image:
   repository: ghcr.io/rohitd03/rider-assignment-service
-  tag: 50a817dabcfd19ee653d349094145e077630779e
-
+  tag: 7f5314610efb72cd4764bb813e2b8c29791767c1
 env:
   PORT: "8080"
   LOG_LEVEL: info
@@ -14,17 +13,14 @@ env:
   POSTGRES_DB: rider_assignment
   REDIS_ADDR: redis:6379
   KAFKA_BROKER: kafka:9092
-
 # Lab only - see the golden chart's note on External Secrets.
 secretEnv:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
-
 # Composed from the vars above ($(VAR) expands values injected via envFrom).
 extraEnv:
   - name: DATABASE_URL
     value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
-
 # Small laptop: keep the HPA but start low.
 hpa:
   minReplicas: 2
