@@ -4,7 +4,7 @@
 
 image:
   repository: ghcr.io/rohitd03/rider-assignment-service
-  tag: 50a817dabcfd19ee653d349094145e077630779e
+
 
 env:
   PORT: "8080"
